@@ -1,0 +1,97 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(tidytext)
+```
+
+```{r}
+en_US_news <- read_delim("final/en_US/en_US.news.txt", "\t", 
+                         escape_double = FALSE, trim_ws = TRUE,
+                         col_names = "news")
+```
+
+```{r}
+
+en_US_news %>% 
+   # slice(1:100) %>% 
+    mutate(obs = row_number()) %>%
+    unnest_tokens(word, news) %>% 
+    count(word, sort = T) %>% 
+    anti_join(stop_words) %>% 
+    mutate(word = reorder(word, n)) %>% 
+    slice(1:20) %>% 
+    ggplot(aes(word, n)) + 
+    geom_col() + xlab(NULL) + coord_flip()
+```
+
+```{r}
+en_US_news
+```
+
+```{r}
+en_US_blogs <- read_delim("final/en_US/en_US.blogs.txt", "\t",
+                          escape_double = FALSE, col_names = "blogs", trim_ws = TRUE)
+
+en_US_twitter <- read_delim("final/en_US/en_US.twitter.txt", "\t",
+                          escape_double = FALSE, col_names = "twits", trim_ws = TRUE)
+```
+
+```{r}
+en_US_blogs %>% mutate(l = nchar(blogs)) %>% arrange(desc(l)) %>% slice(1)
+```
+
+
+```{r}
+en_US_twitter %>% 
+    #slice(1:100) %>% 
+    mutate(obs = row_number()) %>%
+    unnest_tokens(word, twits) %>% 
+    filter(word %in% c("love", "hate")) %>% 
+    group_by(obs, word) %>% summarise(n = n()) %>% ungroup() %>% 
+    group_by(word) %>% summarise(n = n())
+```
+
+```{r}
+99997/17662
+```
+```{r}
+en_US_twitter %>% 
+    filter(str_detect(twits, "A computer once beat me at chess, but it was no match for me at kickboxing"))
+```
+
+```{r}
+en_US_twitter %>% 
+   # slice(1:100) %>% 
+    mutate(obs = row_number()) %>%
+    unnest_tokens(word, twits) %>% 
+    count(word, sort = T) %>% 
+    anti_join(stop_words, by = "word") %>% 
+    mutate(word = reorder(word, n)) %>% 
+    slice(1:20) %>% 
+    ggplot(aes(word, n)) + 
+    geom_col() + xlab(NULL) + coord_flip()
+```
+
+```{r}
+en_US_twitter %>% 
+   # slice(1:100) %>% 
+    mutate(obs = row_number()) %>%
+    unnest_tokens(word, twits, token = "ngrams", n = 3) %>% 
+    count(word, sort = T) %>% 
+    anti_join(stop_words, by = "word") %>% 
+    mutate(word = reorder(word, n)) %>% 
+    slice(1:20) %>% 
+    ggplot(aes(word, n)) + 
+    geom_col() + xlab(NULL) + coord_flip()
+```
+
+
+
+
+
+
+
