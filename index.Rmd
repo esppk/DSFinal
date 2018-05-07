@@ -1,0 +1,103 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r, warning=F, message=F}
+library(tidyverse)
+library(tidytext)
+```
+
+Let's first read the data.
+
+```{r, warning=F, message= F}
+en_US_news <- read_delim("final/en_US/en_US.news.txt", "\t", 
+                         escape_double = FALSE, trim_ws = TRUE,
+                         col_names = "news")
+en_US_blogs <- read_delim("final/en_US/en_US.blogs.txt", "\t",
+                          escape_double = FALSE, col_names = "blogs", trim_ws = TRUE)
+
+en_US_twitter <- read_delim("final/en_US/en_US.twitter.txt", "\t",
+                          escape_double = FALSE, col_names = "twits", trim_ws = TRUE)
+```
+
+
+Let's check how many observations we got here. 
+```{r}
+obs <- map_dbl(list(en_US_blogs, en_US_news, en_US_twitter), nrow)
+dim(obs) <- c(1,3)
+knitr::kable(obs, col.names = c("blogs", "news", "twitter"), row.names = F, align = "c")
+```
+
+
+Now take a look at each of the data set. (click right arrow to see more columns)
+
+```{r}
+cbind(en_US_news[1:100,], en_US_blogs[1:100,], en_US_twitter[1:100,]) %>% as.tibble()
+```
+
+
+How are the they different in length?
+```{r}
+blogs <- en_US_blogs %>% summarise(blogs = mean(nchar(blogs)))
+news <- en_US_news %>% summarise(news = mean(nchar(news)))
+twits <- en_US_twitter %>% summarise(twits = mean(nchar(twits)))
+cbind(blogs, news, twits)
+```
+
+Not supprisingly, twitters have the shortest length, while the blogs are the longest ones.
+
+
+What's the most common words in news? let's find out. Here, we remove the so called "stop word", which are used very often but without actual meaning, such as "the", "a", etc.
+```{r}
+en_US_news %>% 
+   # slice(1:100) %>% 
+    mutate(obs = row_number()) %>%
+    unnest_tokens(word, news) %>% 
+    count(word, sort = T) %>% 
+    anti_join(stop_words, by = "word") %>% 
+    mutate(word = reorder(word, n)) %>% 
+    slice(1:20) %>% 
+    ggplot(aes(word, n)) + 
+    geom_col() + xlab(NULL) + coord_flip()
+```
+
+
+What about twitter?
+```{r}
+en_US_twitter %>% 
+   # slice(1:100) %>% 
+    #mutate(obs = row_number()) %>%
+    unnest_tokens(word, twits) %>% 
+    count(word, sort = T) %>% 
+    anti_join(stop_words, by = "word") %>% 
+    mutate(word = reorder(word, n)) %>% 
+    slice(1:20) %>% 
+    ggplot(aes(word, n)) + 
+    geom_col() + xlab(NULL) + coord_flip()
+```
+
+
+Let's check the blogs as well.
+
+```{r}
+en_US_blogs %>% 
+   # slice(1:100) %>% 
+   # mutate(obs = row_number()) %>%
+    unnest_tokens(word, blogs) %>% 
+    count(word, sort = T) %>% 
+    anti_join(stop_words, by = "word") %>% 
+    mutate(word = reorder(word, n)) %>% 
+    slice(1:20) %>% 
+    ggplot(aes(word, n)) + 
+    geom_col() + xlab(NULL) + coord_flip()
+```
+
+
+
+
+
+
+
