@@ -1,0 +1,116 @@
+---
+title: "NewQuand"
+output: html_notebook
+---
+
+```{r}
+library(quanteda)
+library(readtext)
+```
+
+```{r}
+list.files("final/en_US")
+txt_path <- file.path("final/en_US",list.files("final/en_US")[7])
+txt_path <- file.path("final/en_US",list.files("final/en_US")[8])
+```
+
+
+```{r}
+n_grams <- w5_ %>% rename(freq = X1, first = X2, second = X3, third = X4,
+                          fourth = X5, fifth = X6)
+saveRDS(n_grams, file="gram_data")
+n_grams <- readRDS("gram_data")
+
+query <- "I really want to thank "
+
+query_tks <- (query %>% 
+                  str_remove_all("[^a-zA-z\\s]") %>%
+                  str_split(" "))[[1]]
+
+tks <- query_tks[(length(query_tks)-2): length(query_tks)]
+
+pred_word <- function(tks, n_grams){
+    
+    res <- n_grams %>% 
+        filter(first == tks[1]) %>% 
+        filter(second == tks[2]) %>% 
+        filter(third == tks[3]) %>%
+        filter(third == tks[4]) %>%
+        arrange(desc(freq)) %>% slice(1)
+    
+    pred <- res$fifth[1]
+    
+    if (is.na(pred)) {
+        res <- n_grams %>% 
+            filter(first == tks[1]) %>% 
+            filter(second == tks[2]) %>% 
+            filter(third == tks[3]) %>%
+            arrange(desc(freq)) %>% slice(1)
+        pred <- res$fourth[1]
+    }
+    
+    if (is.na(pred)) {
+      res <-  n_grams %>% 
+        filter(first == tks[2]) %>% 
+        filter(second == tks[3]) %>% 
+        arrange(desc(freq))
+      pred <- res$third[1]
+    } 
+    
+    if(is.na(pred)) {
+        res <- n_grams %>% 
+            filter(first == tks[3]) %>% 
+            arrange(desc(freq))
+        pred <- res$second[1]
+    }
+    
+    if(is.na(pred)){
+        pred <- "the"
+    }
+    
+    pred
+}
+pred_word(tks, n_grams)
+```
+
+
+Using a small sample
+```{r}
+n_gram <- readr::read_delim(txt_path, "\t")
+n_gram %>% head()
+small_text <- en_US_news %>% slice(1: 100000) %>% rename(text = news)
+enTxt <- small_text
+```
+
+
+```{r}
+enTxt <- readtext(txt_path)
+enCorp <- corpus(enTxt) 
+```
+
+ad hoc kwic approach
+```{r}
+res <- kwic(enCorp, phrase("how are"))
+res %>% as.tibble() %>% select(post) %>% separate(post, c("first", "second"), extra = "drop",
+                                                  fill = "right") %>% count(first, sort = TRUE)
+
+```
+
+
+```{r}
+tks <- tokens(enCorp, what = "word", remove_numbers = TRUE, remove_punct = TRUE,
+  remove_symbols = TRUE, remove_separators = TRUE,
+  remove_twitter = TRUE, remove_hyphens = TRUE, remove_url = TRUE,
+  ngrams = 1L:3L, skip = 0L, concatenator = "_",
+  verbose = quanteda_options("verbose"), include_docvars = TRUE)
+```
+
+```{r}
+tks <- tks %>% tokens_tolower()
+tks %>% head(1)
+```
+
+```{r}
+tk_df <- tks %>% as.data.frame()
+```
+
